@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'components/my_textfield.dart';
 import 'pokemon.dart';
 
 class HomePage extends StatefulWidget {
@@ -164,36 +165,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     visible: showTextFields,
                     child: Column(
                       children: [
-                        TextField(
-                          controller: nameController,
-                          decoration: const InputDecoration(
-                              hintText: "Pokemon Name",
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(10),)
-                              )
-                          ),
-                        ),
+                        MyTextField(
+                            controller: nameController,
+                            hintText: "Name",
+                            ),
                         const SizedBox(height: 10,),
-                        TextField(
+                        MyTextField(
                           controller: typeController,
-      
-                          decoration: const InputDecoration(
-                              hintText: "Type",
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(10),)
-                              )
-                          ),
+                          hintText: "Type",
                         ),
                         const SizedBox(height: 10,),
-                        TextField(
+                        MyTextField(
                           controller: descriptionController,
-      
-                          decoration: const InputDecoration(
-                              hintText: "Descriptioon",
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(10),)
-                              )
-                          ),
+                          hintText: "Description",
                         ),
                         const SizedBox(height: 10,),
       
