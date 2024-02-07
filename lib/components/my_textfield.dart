@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class MyTextField extends StatelessWidget {
   final controller;
   final String hintText;
+  final Function(String)? onChanged;
 
 
   const MyTextField({
@@ -10,6 +11,7 @@ class MyTextField extends StatelessWidget {
 
     required this.controller,
     required this.hintText,
+    this.onChanged
 
   });
 
@@ -17,6 +19,7 @@ class MyTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      onChanged: onChanged,
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         border: OutlineInputBorder(

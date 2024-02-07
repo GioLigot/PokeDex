@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:listview_test/components/button1.dart';
 
-import 'components/my_textfield.dart';
-import 'pokemon.dart';
+import '../components/my_textfield.dart';
+import '../models/pokemon.dart';
+import '../services/pokemon_manager.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,14 +24,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   ];
 
-  List<Pokemon> filteredPokemon = [];
+  final PokemonManager pokemonManager = PokemonManager();
 
 
   int selectedIndex = -1;
   bool showTextFields = false;
   bool showSearchFields = false;
   bool addButton = false;
-  bool updateButton = false;
+
 
   final Duration _animationDuration = const Duration(milliseconds: 300);
   AnimationController? _animationController;
@@ -42,7 +44,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       duration: _animationDuration,
     );
 
-    filteredPokemon = pokemon;
+    pokemonManager.initializeFilteredPokemonList();
 
   }
 
@@ -52,16 +54,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _searchPokemons(String query) {
+
+  void _onSearchTextChanged(String query) {
     setState(() {
-      filteredPokemon = pokemon.where((pokemon) {
-        final nameLower = pokemon.name.toLowerCase();
-        final queryLower = query.toLowerCase();
-        return nameLower.contains(queryLower);
-      }).toList();
+      searchController.text = query;
+      pokemonManager.searchPokemons(query);
     });
   }
 
+  void _button1() {
+    setState(() {
+      nameController.text = '';
+      typeController.text = '';
+      descriptionController.text = '';
+      showTextFields = !showTextFields;
+      showSearchFields = false;
+
+      if(addButton == false) {
+        addButton = true;
+      }else{
+        addButton = false;
+      }
+    });
+  }
+
+  void _button2() {
+    setState(() {
+      showSearchFields = !showSearchFields;
+      showTextFields = false;
+    });
+  }
 
 
   @override
@@ -75,14 +97,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           centerTitle: true,
           title:
           const Text(
-                "PokeDex",
-                style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 25,
-                fontFamily: 'Outfit',
+            "PokeDex",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 25,
+              fontFamily: 'Outfit',
 
-              ),
+            ),
           ),
 
         ),
@@ -91,42 +113,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-      
+
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF78C850),
-                    child: IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () {
-                        setState(() {
-                          nameController.text = '';
-                          typeController.text = '';
-                          descriptionController.text = '';
-                          showTextFields = !showTextFields;
-                          showSearchFields = false;
-                          addButton = !addButton;
-                          updateButton = false;
-                        });
-                      },
-                    ),
+                  MyButton1(
+                      onTap: _button1,
+                      iconData: Icons.add
                   ),
                   const SizedBox(width: 10,),
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF78C850),
-                    child: IconButton(
-                      icon: const Icon(Icons.search),
-                      onPressed: () {
-                        setState(() {
-                          showSearchFields = !showSearchFields;
-                          showTextFields = false;
-                        });
-                      },
-                    ),
+                  MyButton1(
+                      onTap: _button2,
+                      iconData: Icons.search
                   ),
                 ],
               ),
-      
+
               const SizedBox(height: 10,),
               AnimatedContainer(
                 duration: _animationDuration,
@@ -139,7 +140,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       children: [
                         TextField(
                           controller: searchController,
-                          onChanged: _searchPokemons,
+                          onChanged: _onSearchTextChanged,
                           decoration: const InputDecoration(
                               hintText: "Search",
                               border: OutlineInputBorder(
@@ -147,14 +148,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               )
                           ),
                         ),
-      
+
                         const SizedBox(height: 10,),
                       ],
                     ),
                   ),
                 ),
               ),
-      
+
               const SizedBox(height: 10,),
               AnimatedContainer(
                 duration: _animationDuration,
@@ -166,9 +167,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     child: Column(
                       children: [
                         MyTextField(
-                            controller: nameController,
-                            hintText: "Name",
-                            ),
+                          controller: nameController,
+                          hintText: "Name",
+                        ),
                         const SizedBox(height: 10,),
                         MyTextField(
                           controller: typeController,
@@ -180,20 +181,40 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           hintText: "Description",
                         ),
                         const SizedBox(height: 10,),
-      
-      
-                        Visibility(
-                          visible: addButton,
-                          child: ElevatedButton(
-                              onPressed: (){
-                                String name = nameController.text.trim();
-                                String type = typeController.text.trim();
-                                String description = descriptionController.text.trim();
-      
-                                if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
-      
+
+
+                        ElevatedButton(
+                            onPressed: (){
+                              String name = nameController.text.trim();
+                              String type = typeController.text.trim();
+                              String description = descriptionController.text.trim();
+
+                              if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
+
+                                if(addButton == true) {
+                                  if (pokemon
+                                      .any((pokemon) => pokemon.name == name)) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Pokemon with this name already exists!')),
+                                    );
+                                  } else {
+                                    setState(() {
+                                      nameController.text = '';
+                                      typeController.text = '';
+                                      descriptionController.text = '';
+
+                                      Pokemon newPokemon = Pokemon(
+                                          name: name,
+                                          type: type,
+                                          description: description);
+                                      pokemonManager.addPokemon(newPokemon);
+                                    });
+                                  }
+                                }else{
                                   if (pokemon.any((pokemon) => pokemon.name == name)) {
-      
+
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Pokemon with this name already exists!')),
                                     );
@@ -202,67 +223,46 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       nameController.text = '';
                                       typeController.text = '';
                                       descriptionController.text = '';
-      
-                                      pokemon.add(Pokemon(name: name, type: type, description: description));
-                                      filteredPokemon = pokemon;
+
+                                      Pokemon updatedPokemon = Pokemon(name: name, type: type, description: description);
+                                      pokemonManager.updatePokemon(selectedIndex, updatedPokemon);
+                                      selectedIndex = -1;
                                     });
                                   }
-                                }else{
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('All fields are required!')),
-                                  );
                                 }
-                              },
-                              child: const Text("Save")
-                          ),
+                              }else{
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('All fields are required!')),
+                                );
+                              }
+                            },
+                            child: Text(addButton == true ? "Save"  : "Update", style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontFamily: 'Outfit',
+
+                            ),)
                         ),
-                        Visibility(
-                          visible: updateButton,
-                          child: ElevatedButton(
-                              onPressed: (){
-                                String name = nameController.text.trim();
-                                String type = typeController.text.trim();
-                                String description = descriptionController.text.trim();
-      
-                                if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
-      
-                                  setState(() {
-                                    nameController.text = '';
-                                    typeController.text = '';
-                                    descriptionController.text = '';
-      
-                                    pokemon[selectedIndex].name = name;
-                                    pokemon[selectedIndex].type = type;
-                                    pokemon[selectedIndex].description = description;
-                                    selectedIndex = -1;
-      
-                                  });
-                                }
-      
-      
-                              },
-                              child: const Text("Update")
-                          ),
-                        ),
-      
+
                         const SizedBox(height: 10,),
                       ],
                     ),
                   ),
                 ),
               ),
-      
-      
+
+
               const SizedBox(height: 10,),
-      
+
               pokemon.isEmpty ? const Text("No Pokemons found..", style: TextStyle(fontSize: 22),):
-      
+
               Expanded(
                 child: ListView.builder(
-                    itemCount: filteredPokemon.length,
+                    itemCount: pokemonManager.filteredPokemonList.length,
                     itemBuilder: (context, index) => getRow(index)),
               ),
-      
+
             ],
           ),
         ),
@@ -276,7 +276,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         leading: CircleAvatar(
             backgroundColor: index%2 == 0 ? Colors.green : Colors.greenAccent,
             foregroundColor: Colors.white,
-            child: Text(filteredPokemon[index].name[0], style: const TextStyle(
+            child: Text(pokemonManager.filteredPokemonList[index].name[0], style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 25,
@@ -288,21 +288,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(filteredPokemon[index].name, style: const TextStyle(
+            Text(pokemonManager.filteredPokemonList[index].name, style: const TextStyle(
               color: Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: 18,
               fontFamily: 'Outfit',
 
             ),),
-            Text(filteredPokemon[index].type, style: const TextStyle(
+            Text(pokemonManager.filteredPokemonList[index].type, style: const TextStyle(
               color: Colors.black38,
               fontWeight: FontWeight.normal,
               fontSize: 15,
               fontFamily: 'Zilla',
 
             ),),
-            Text(filteredPokemon[index].description, style: const TextStyle(
+            Text(pokemonManager.filteredPokemonList[index].description, style: const TextStyle(
               color: Colors.black38,
               fontWeight: FontWeight.normal,
               fontSize: 15,
@@ -318,16 +318,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               GestureDetector(
                   onTap: ((){
 
-                    nameController.text = pokemon[index].name;
-                    typeController.text = pokemon[index].type;
-                    descriptionController.text = pokemon[index].description;
+                    nameController.text = pokemonManager.filteredPokemonList[index].name;
+                    typeController.text = pokemonManager.filteredPokemonList[index].type;
+                    descriptionController.text = pokemonManager.filteredPokemonList[index].description;
 
                     setState(() {
                       selectedIndex = index;
-                      showTextFields = !showTextFields;
+                      showTextFields = true;
                       showSearchFields = false;
-                      updateButton = !updateButton;
-                      addButton = false;
+                      if(addButton == false) {
+                        addButton = true;
+                      }else{
+                        addButton = false;
+                      }
                     });
 
                   }
@@ -336,22 +339,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       Icons.edit)),
               const SizedBox(width: 10,),
               GestureDetector(
-                  onTap: ((){
+                  onTap: (){
 
-                    int originalIndex = pokemon.indexOf(filteredPokemon[index]);
+                    int originalIndex = pokemonManager.pokemonList.indexOf(pokemonManager.filteredPokemonList[index]);
 
                     setState(() {
-                      pokemon.removeAt(originalIndex);
-                      filteredPokemon = pokemon;
+                      pokemonManager.removePokemon(originalIndex);
                       searchController.text = '';
-
                     });
-
-                  }
-                  ),
-                  child: const Icon(
-                      Icons.delete))
-              ,
+                  },
+                  child: const Icon(Icons.delete)
+              ),
             ],
           ),
         ),
