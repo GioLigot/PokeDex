@@ -1,6 +1,6 @@
 // import 'package:flutter/material.dart';
 // import 'package:listview_test/components/button1.dart';
-//
+// import 'package:listview_test/services/database_helper.dart';
 // import '../components/my_textfield.dart';
 // import '../models/pokemon.dart';
 // import '../services/pokemon_manager.dart';
@@ -17,41 +17,81 @@
 //   TextEditingController typeController = TextEditingController();
 //   TextEditingController descriptionController = TextEditingController();
 //   TextEditingController searchController = TextEditingController();
-//   List<Pokemon> pokemon = [
-//     Pokemon(id: 0, name: "Bulbasaur", type:"Grass, Poison",  description: "Seed Pokémon"),
-//     Pokemon(id: 1, name: "Charmander", type:"Fire",  description: "Lizard-like Pokémon"),
-//     Pokemon(id: 2, name: "Squirtle", type:"Water",  description: "Turtle Pokemon"),
-//
-//   ];
 //
 //   final PokemonManager pokemonManager = PokemonManager();
-//
-//
 //   int selectedIndex = -1;
 //   bool showTextFields = false;
 //   bool showSearchFields = false;
-//   bool addButton = false;
-//
-//
 //   final Duration _animationDuration = const Duration(milliseconds: 300);
 //   AnimationController? _animationController;
+//   final SQLHelper sqlHelper = SQLHelper();
+//   List<Map<String, dynamic>> _pokemons = [];
+//   bool addButton = false;
+//   bool closeButton = false;
 //
-//   @override
-//   void initState() {
-//     super.initState();
-//     _animationController = AnimationController(
-//       vsync: this,
-//       duration: _animationDuration,
-//     );
+//   int id = 0;
 //
-//     pokemonManager.initializeFilteredPokemonList();
+//   int pokemonId = 0;
+//
+//   void _refreshPokemons() async {
+//     final data = await SQLHelper.getPokemons(context,);
+//     for (final pokemon in data) {
+//       print('ID: ${pokemon['id']}, Name: ${pokemon['name']}, Type: ${pokemon['type']}');
+//     }
+//     setState(() {
+//       _pokemons = data;
+//
+//     });
+//   }
+//
+//   void addPokemon(String name, String type, String description) async {
+//     await SQLHelper.addPokemon(context, name, type, description);
+//     _refreshPokemons();
+//   }
+//
+//   void deletePokemon(int id) async {
+//     if (_pokemons.any((pokemon) => pokemon['id'] == id)) {
+//       await SQLHelper.deletePokemon(id);
+//
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Pokemon deleted!')),
+//       );
+//
+//       _refreshPokemons();
+//
+//
+//
+//     } else {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Pokemon not found!')),
+//       );
+//     }
 //
 //   }
 //
-//   @override
-//   void dispose() {
-//     _animationController?.dispose();
-//     super.dispose();
+//   void updatePokemon(int id, String name, String type, String description) async {
+//     print("Updating Pokemon with ID: $id");
+//     print("Current Pokemon list: $_pokemons");
+//
+//     if (_pokemons.any((pokemon) => pokemon['id'] == id)) {
+//       int index = _pokemons.indexWhere((pokemon) => pokemon['id'] == id);
+//       print("Found Pokemon at index: $index");
+//
+//       // Pokemon updatedPokemon = Pokemon(
+//       //   id: id,
+//       //   name: name,
+//       //   type: type,
+//       //   description: description,
+//       // );
+//       if (index != -1) {
+//         await SQLHelper.updatePokemon(context, id, name, type, description);
+//         _refreshPokemons();
+//       }
+//     } else {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Pokemon not found!')),
+//       );
+//     }
 //   }
 //
 //
@@ -59,6 +99,12 @@
 //     setState(() {
 //       searchController.text = query;
 //       pokemonManager.searchPokemons(query);
+//     });
+//   }
+//
+//   void toggleCloseButton() {
+//     setState(() {
+//       closeButton = !closeButton;
 //     });
 //   }
 //
@@ -76,7 +122,9 @@
 //       showTextFields = !showTextFields;
 //       showSearchFields = false;
 //
-//       toggleAddButton();
+//       toggleCloseButton();
+//       addButton = true;
+//
 //     });
 //   }
 //
@@ -87,8 +135,26 @@
 //     });
 //   }
 //
+//   @override
+//   void initState() {
+//     super.initState();
+//     _animationController = AnimationController(
+//       vsync: this,
+//       duration: _animationDuration,
+//     );
 //
+//     pokemonManager.initializeFilteredPokemonList();
 //
+//     _refreshPokemons();
+//     print(".. number of pokemons ${_pokemons.length}");
+//
+//   }
+//
+//   @override
+//   void dispose() {
+//     _animationController?.dispose();
+//     super.dispose();
+//   }
 //
 //   @override
 //   Widget build(BuildContext context) {
@@ -122,7 +188,7 @@
 //                 children: [
 //                   MyButton1(
 //                     onTap: _button1,
-//                     iconData: addButton == true ? Icons.close : Icons.add,
+//                     iconData: closeButton == true ? Icons.close : Icons.add,
 //                   ),
 //                   const SizedBox(width: 10,),
 //                   MyButton1(
@@ -145,7 +211,8 @@
 //                         MyTextField(
 //                           controller: searchController,
 //                           hintText: "Search...",
-//                           onChanged: _onSearchTextChanged,),
+//                           onChanged: _onSearchTextChanged,
+//                         ),
 //
 //                         const SizedBox(height: 10,),
 //                       ],
@@ -187,44 +254,45 @@
 //                               String type = typeController.text.trim();
 //                               String description = descriptionController.text.trim();
 //
+//                               print("Selected Pokemon ID: $pokemonId");
+//
+//
 //                               if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
 //
 //                                 if(addButton == true) {
-//                                   if (pokemon
-//                                       .any((pokemon) => pokemon.name == name)) {
+//                                   if (_pokemons.any((pokemon) => _pokemons[pokemonId]['name'] == name)) {
 //                                     ScaffoldMessenger.of(context).showSnackBar(
 //                                       const SnackBar(
 //                                           content: Text(
 //                                               'Pokemon with this name already exists!')),
 //                                     );
 //                                   } else {
+//                                     addPokemon(name, type, description);
 //                                     setState(() {
 //                                       nameController.text = '';
 //                                       typeController.text = '';
 //                                       descriptionController.text = '';
+//                                       pokemonId = 0;
 //
-//                                       Pokemon newPokemon = Pokemon(
-//                                           name: name,
-//                                           type: type,
-//                                           description: description);
-//                                       pokemonManager.addPokemon(newPokemon);
 //                                     });
-//                                   }
-//                                 }else{
-//                                   if (pokemon.any((pokemon) => pokemon.name == name)) {
 //
+//                                   }
+//                                 }else if(addButton == false){
+//                                   if (_pokemons.any((pokemon) => _pokemons[pokemonId]['name'] == name))
+//                                   {
 //                                     ScaffoldMessenger.of(context).showSnackBar(
 //                                       const SnackBar(content: Text('Pokemon with this name already exists!')),
 //                                     );
 //                                   }else {
+//
+//                                     updatePokemon(pokemonId, name, type, description);
+//
 //                                     setState(() {
 //                                       nameController.text = '';
 //                                       typeController.text = '';
 //                                       descriptionController.text = '';
-//
-//                                       Pokemon updatedPokemon = Pokemon(name: name, type: type, description: description);
-//                                       pokemonManager.updatePokemon(selectedIndex, updatedPokemon);
 //                                       selectedIndex = -1;
+//                                       _refreshPokemons();
 //                                     });
 //                                   }
 //                                 }
@@ -234,13 +302,14 @@
 //                                 );
 //                               }
 //                             },
-//                             child: Text(addButton == true ? "Save"  : "Update", style: const TextStyle(
-//                               color: Colors.black87,
-//                               fontWeight: FontWeight.bold,
-//                               fontSize: 18,
-//                               fontFamily: 'Outfit',
+//                             child: Text(addButton == true ? "Save"  : "Update",
+//                               style: const TextStyle(
+//                                 color: Colors.black87,
+//                                 fontWeight: FontWeight.bold,
+//                                 fontSize: 18,
+//                                 fontFamily: 'Outfit',
 //
-//                             ),)
+//                               ),)
 //                         ),
 //
 //                         const SizedBox(height: 10,),
@@ -253,12 +322,13 @@
 //
 //               const SizedBox(height: 10,),
 //
-//               pokemon.isEmpty ? const Text("No Pokemons found..", style: TextStyle(fontSize: 22),):
+//               _pokemons.isEmpty ? const Text("No Pokemons found..", style: TextStyle(fontSize: 22),):
 //
 //               Expanded(
 //                 child: ListView.builder(
-//                     itemCount: pokemonManager.filteredPokemonList.length,
-//                     itemBuilder: (context, index) => getRow(index)),
+//                     itemCount: _pokemons.length,
+//                     itemBuilder: (context, index) => getRow(index)
+//                 ),
 //               ),
 //
 //             ],
@@ -274,7 +344,7 @@
 //         leading: CircleAvatar(
 //             backgroundColor: index%2 == 0 ? Colors.green : Colors.greenAccent,
 //             foregroundColor: Colors.white,
-//             child: Text(pokemonManager.filteredPokemonList[index].name[0], style: const TextStyle(
+//             child: Text(_pokemons[index]['name'][0], style: const TextStyle(
 //               color: Colors.white,
 //               fontWeight: FontWeight.bold,
 //               fontSize: 25,
@@ -286,27 +356,31 @@
 //         title: Column(
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: [
-//             Text(pokemonManager.filteredPokemonList[index].name, style: const TextStyle(
+//             Text(_pokemons[index]['name'], style: const TextStyle(
 //               color: Colors.black87,
 //               fontWeight: FontWeight.bold,
 //               fontSize: 18,
 //               fontFamily: 'Outfit',
 //
 //             ),),
-//             Text(pokemonManager.filteredPokemonList[index].type, style: const TextStyle(
+//             Text(_pokemons[index]['type'], style: const
+//             TextStyle(
 //               color: Colors.black38,
 //               fontWeight: FontWeight.normal,
 //               fontSize: 15,
 //               fontFamily: 'Zilla',
 //
-//             ),),
-//             Text(pokemonManager.filteredPokemonList[index].description, style: const TextStyle(
+//             ),
+//             ),
+//             Text(_pokemons[index]['description'], style: const
+//             TextStyle(
 //               color: Colors.black38,
 //               fontWeight: FontWeight.normal,
 //               fontSize: 15,
 //               fontFamily: 'Zilla',
 //
-//             ),),
+//             ),
+//             ),
 //           ],
 //         ),
 //         trailing:  SizedBox(
@@ -316,17 +390,20 @@
 //               GestureDetector(
 //                   onTap: ((){
 //
-//                     nameController.text = pokemonManager.filteredPokemonList[index].name;
-//                     typeController.text = pokemonManager.filteredPokemonList[index].type;
-//                     descriptionController.text = pokemonManager.filteredPokemonList[index].description;
+//                     nameController.text = _pokemons[index]['name'];
+//                     typeController.text = _pokemons[index]['type'];
+//                     descriptionController.text = _pokemons[index]['description'];
+//
 //
 //                     setState(() {
 //                       selectedIndex = index;
 //                       showTextFields = true;
 //                       showSearchFields = false;
+//                       pokemonId = _pokemons[index]['id'];
+//                       addButton = false;
 //
-//                       if(addButton == false) {
-//                         toggleAddButton();
+//                       if(closeButton == false) {
+//                         toggleCloseButton();
 //                       }
 //
 //                     });
@@ -339,11 +416,13 @@
 //               GestureDetector(
 //                   onTap: (){
 //
-//                     int originalIndex = pokemonManager.pokemonList.indexOf(pokemonManager.filteredPokemonList[index]);
 //                     setState(() {
-//                       pokemonManager.removePokemon(originalIndex);
+//                       pokemonId = _pokemons[index]['id'];
 //                       searchController.text = '';
 //                     });
+//                     deletePokemon(pokemonId);
+//                     _refreshPokemons();
+//                     pokemonId = 0;
 //                   },
 //                   child: const Icon(Icons.delete)
 //               ),

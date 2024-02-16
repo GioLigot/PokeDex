@@ -3,11 +3,7 @@
 import 'package:listview_test/models/pokemon.dart';
 
 class PokemonManager {
-  List<Pokemon> pokemonList = [
-    Pokemon(name: "Bulbasaur", type: "Grass, Poison", description: "Seed Pokémon"),
-    Pokemon(name: "Charmander", type: "Fire", description: "Lizard-like Pokémon"),
-    Pokemon(name: "Squirtle", type: "Water", description: "Turtle Pokemon"),
-  ];
+  List<Pokemon> pokemonList = [];
 
   List<Pokemon> filteredPokemonList = [];
 
@@ -57,3 +53,4 @@ class PokemonManager {
   }
 
 }
+
