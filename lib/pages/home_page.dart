@@ -36,75 +36,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _refreshPokemons() async {
     final data = await SQLHelper.getPokemons(context);
-    for (final pokemon in data) {
-      print('ID: ${pokemon['id']}, Name: ${pokemon['name']}, Type: ${pokemon['type']}');
-    }
     setState(() {
       _pokemons = data;
     });
-  }
-
-  void deletePokemon(String selectedMon) async {
-
-    if (_pokemons.any((pokemon) => pokemon['name'] == selectedMon)) {
-      await SQLHelper.deletePokemon(context,selectedMon);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pokemon deleted!')),
-      );
-      _refreshPokemons();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pokemon not found!')),
-      );
-    }
-  }
-
-  void addPokemon(String name, String type, String description) async {
-    int success = await SQLHelper.addPokemon(context, name, type, description);
-    print("Add Pokemon: " + success.toString());
-    if(success == 0) {
-      _refreshPokemons();
-      setState(() {
-        nameController.text = '';
-        typeController.text = '';
-        descriptionController.text = '';
-        pokemonId = 0;
-
-      });
-    }else if(success == 1){
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pokemon with that name already exists!')),
-      );
-    }else if(success == 2){
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error adding pokemon')),
-      );
-    }
-  }
-
-  void updatePokemon(String selectedMon, String name, String type, String description) async {
-    int success = await SQLHelper.updatePokemon(context, selectedMon, name, type, description);
-    print("Update pokemon: " + success.toString());
-    if(success ==0) {
-      _refreshPokemons();
-      setState(() {
-        nameController.text = '';
-        typeController.text = '';
-        descriptionController.text = '';
-        selectedIndex = -1;
-        _refreshPokemons();
-      });
-    }else if(success == 1){
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pokemon with that name already exists!')),
-      );
-    }else if(success == 2){
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error updating pokemon')),
-      );
-    }
-    pokemonId = 0;
   }
 
   void _onSearchTextChanged(String query) async{
@@ -151,11 +85,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _button3() async{
-
     await SQLHelper.clearTable(context);
-    setState(() {
-      _refreshPokemons();
-    });
+    _refreshPokemons();
   }
 
 
@@ -284,17 +215,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
 
                                 if(addButton == true) {
-                                  if (_pokemons.any((pokemon) => _pokemons[pokemonId]['name'] == name)) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Pokemon with this name already exists!')),
-                                    );
-                                  } else {
-                                    addPokemon(name, type, description);
-                                  }
+                                  SQLHelper.addPokemon(context, name, type, description, nameController, typeController, descriptionController);
                                 }else if(addButton == false){
-                                  updatePokemon(selectedMon, name, type, description);
+                                  SQLHelper.updatePokemon(context, selectedMon, name, type, description, nameController, typeController, descriptionController);
+                                  pokemonId = 0;
                                 }
                               }else{
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -319,9 +243,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
 
               const SizedBox(height: 10,),
-
               _pokemons.isEmpty ? const Text("No Pokemons found..", style: TextStyle(fontSize: 22),):
-
               Expanded(
                 child: ListView.builder(
                     itemCount: _pokemons.length,
@@ -330,7 +252,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           nameController.text = _pokemons[index]['name'];
                           typeController.text = _pokemons[index]['type'];
                           descriptionController.text = _pokemons[index]['description'];
-                          setState(() async {
+                          setState((){
                             selectedIndex = index;
                             showTextFields = true;
                             showSearchFields = false;
@@ -345,10 +267,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         onTap2: (){
                           setState(() {
                             selectedMon = _pokemons[index]['name'].toString();
-                            pokemonId = _pokemons[index]['id'];
-                            searchController.text = '';
+                            searchController.clear();
                           });
-                          deletePokemon(selectedMon);
+                          SQLHelper.deletePokemon(context,selectedMon);
                           _refreshPokemons();
                           selectedMon = "";
                         },

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:listview_test/models/pokemon.dart';
 import 'package:listview_test/models/queries.dart';
@@ -48,9 +49,14 @@ class SQLHelper{
     }
   }
 
-  static Future<int> addPokemon(BuildContext context,String name, String type, String description) async{
+  static Future<void> addPokemon(BuildContext context,
+      String name,
+      String type,
+      String description,
+      TextEditingController nameController,
+      TextEditingController typeController,
+      TextEditingController descriptionController) async{
     final db = await SQLHelper.db();
-    int status = 0;
     try {
       List<Queries> queries = await getQueriesFromXML(context);
       List<dynamic> pokemon = await getPokemon(context, name);
@@ -61,15 +67,27 @@ class SQLHelper{
         final addPokemonQuery = addPokemonText.text;
         List<dynamic> params = [name, type, description];
         await db.rawInsert(addPokemonQuery, params);
-        status = 0;
+        nameController.clear();
+        typeController.clear();
+        descriptionController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pokemon added!')),
+        );
+        return;
       }else if (pokemon.isNotEmpty){
-        status = 1;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pokemon with that name already exists!')),
+        );
+        return;
       }
     } catch (error) {
       print("Error: $error");
-      status = 2;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error Adding Pokemon!')),
+      );
+      return;
     }
-    return status;
+
   }
 
   // static Future<bool> checkForDuplicate(BuildContext context, String name) async{
@@ -95,9 +113,16 @@ class SQLHelper{
   //
   // }
 
-  static Future<int> updatePokemon(BuildContext context, String selectedMon, String name, String type, String description) async{
+  static Future<void> updatePokemon(BuildContext context,
+      String selectedMon,
+      String name,
+      String type,
+      String description,
+      TextEditingController nameController,
+      TextEditingController typeController,
+      TextEditingController descriptionController
+      ) async{
     final db = await SQLHelper.db();
-    int status = 0;
     try {
       List<Queries> queries = await getQueriesFromXML(context);
       List<dynamic> pokemon = await getPokemon(context, name);
@@ -107,20 +132,30 @@ class SQLHelper{
         final updatePokemonQuery = updatePokemonText.text;
         List<dynamic> params = [name, type, description, selectedMon];
         await db.rawQuery(updatePokemonQuery, params);
-        status =  0;
+        nameController.clear();
+        typeController.clear();
+        descriptionController.clear();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Update Success!')),
+        );
+        return;
+
       }else if (pokemon.isNotEmpty){
-        status =  1;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pokemon with that name already exists!')),
+        );
+        return;
       }
     } catch (error) {
       print("Error: $error");
-      status =  2;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error Updating Pokemon!')),
+      );
+      return;
+
     }
-    return status;
   }
-
-
-
-
 
   static Future<List<Map<String, dynamic>>> getPokemons(BuildContext context) async{
     final db = await SQLHelper.db();
@@ -163,9 +198,15 @@ class SQLHelper{
       final deletePokemonQuery = deletePokemonText.text;
       List<dynamic> params = [selectedMon];
       await db.rawQuery(deletePokemonQuery, params);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pokemon deleted!')),
+      );
 
     } catch (error) {
       print("Error: $error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pokemon not found!')),
+      );
 
     }
   }
