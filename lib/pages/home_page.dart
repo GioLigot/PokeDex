@@ -19,7 +19,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   TextEditingController typeController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   TextEditingController searchController = TextEditingController();
-
   final PokemonManager pokemonManager = PokemonManager();
   int selectedIndex = -1;
   bool showTextFields = false;
@@ -88,7 +87,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     await SQLHelper.clearTable(context);
     _refreshPokemons();
   }
-
 
   @override
   void initState() {
@@ -215,10 +213,32 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
 
                                 if(addButton == true) {
-                                  SQLHelper.addPokemon(context, name, type, description, nameController, typeController, descriptionController);
+                                  await SQLHelper.addPokemon(
+                                      context,
+                                      name,
+                                      type,
+                                      description,
+                                      nameController,
+                                      typeController,
+                                      descriptionController);
+                                  setState(() {
+                                    _refreshPokemons();
+                                  });
+
                                 }else if(addButton == false){
-                                  SQLHelper.updatePokemon(context, selectedMon, name, type, description, nameController, typeController, descriptionController);
+                                  await SQLHelper.updatePokemon(
+                                      context,
+                                      selectedMon,
+                                      name,
+                                      type,
+                                      description,
+                                      nameController,
+                                      typeController,
+                                      descriptionController);
                                   pokemonId = 0;
+                                  setState(() {
+                                    _refreshPokemons();
+                                  });
                                 }
                               }else{
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -226,14 +246,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 );
                               }
                             },
-                            child: Text(addButton == true ? "Save"  : "Update",
+                            child:
+                            Text(addButton == true ? "Save"  : "Update",
                               style: const TextStyle(
                                 color: Colors.black87,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 fontFamily: 'Outfit',
-
-                              ),)
+                              ),
+                            )
                         ),
                         const SizedBox(height: 10,),
                       ],
@@ -258,7 +279,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             showSearchFields = false;
                             addButton = false;
                             selectedMon = _pokemons[index]['name'].toString();
-
                             if(closeButton == false) {
                               toggleCloseButton();
                             }
