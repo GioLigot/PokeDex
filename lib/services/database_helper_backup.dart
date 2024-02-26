@@ -90,8 +90,30 @@ class SQLHelper{
 
   }
 
-  static Future<void> updatePokemon(
-      BuildContext context,
+  // static Future<bool> checkForDuplicate(BuildContext context, String name) async{
+  //   final db = await SQLHelper.db();
+  //   try {
+  //     List<Queries> queries = await getQueriesFromXML(context);
+  //     final checkForDuplicateQuery = queries.firstWhere((query) => query.name == "checkForDuplicate").text;
+  //
+  //     List<dynamic> params = [name];
+  //     final result = await db.rawQuery(checkForDuplicateQuery, params);
+  //     if (result.isNotEmpty && result.first['COUNT'] == 1) {
+  //       print("has duplicate");
+  //       return true;
+  //     } else {
+  //       print("has no duplicate");
+  //
+  //       return false;
+  //     }
+  //   } catch (error) {
+  //     print("Error: $error");
+  //     return false;
+  //   }
+  //
+  // }
+
+  static Future<void> updatePokemon(BuildContext context,
       String selectedMon,
       String name,
       String type,

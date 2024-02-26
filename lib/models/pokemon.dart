@@ -14,6 +14,16 @@ class Pokemon{
         }
 
       );
+
+  factory Pokemon.fromMap(Map<String, dynamic> data) {
+    return Pokemon(
+      id: data['id'],
+      name: data['name'],
+      type: data['type'],
+      description: data['description'],
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -22,5 +32,8 @@ class Pokemon{
       'description': description,
     };
 
+
+
 }
+
 }

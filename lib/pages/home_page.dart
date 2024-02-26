@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:listview_test/bloc/pokemon_state.dart';
 import 'package:listview_test/components/button1.dart';
 import 'package:listview_test/services/database_helper.dart';
+import '../bloc/pokemon_bloc.dart';
+import '../bloc/pokemon_event.dart';
 import '../components/my_textfield.dart';
 import '../components/pokemonCard.dart';
 import '../models/pokemon.dart';
@@ -32,12 +36,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int id = 0;
   int pokemonId = 0;
   late String selectedMon = " ";
+  Pokemon? selectedPokemon;
 
   void _refreshPokemons() async {
-    final data = await SQLHelper.getPokemons(context);
-    setState(() {
-      _pokemons = data;
-    });
+    BlocProvider.of<PokemonBloc>(context).add(FetchPokemons(context));
   }
 
   void _onSearchTextChanged(String query) async{
@@ -95,9 +97,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       vsync: this,
       duration: _animationDuration,
     );
-    pokemonManager.initializeFilteredPokemonList();
     _refreshPokemons();
-    print(".. number of pokemons ${_pokemons.length}");
   }
 
   @override
@@ -204,41 +204,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
                         ElevatedButton(
                             onPressed: () async{
-                              String name = nameController.text.trim();
-                              String type = typeController.text.trim();
-                              String description = descriptionController.text.trim();
 
-                              print("Selected Pokemon ID: $pokemonId");
-
-                              if(name.isNotEmpty && type.isNotEmpty && description.isNotEmpty){
-
+                              if(nameController.text.isNotEmpty && typeController.text.isNotEmpty && descriptionController.text.isNotEmpty){
                                 if(addButton == true) {
-                                  await SQLHelper.addPokemon(
-                                      context,
-                                      name,
-                                      type,
-                                      description,
-                                      nameController,
-                                      typeController,
-                                      descriptionController);
-                                  setState(() {
-                                    _refreshPokemons();
-                                  });
-
+                                  BlocProvider.of<PokemonBloc>(context).add(AddPokemon(
+                                    context,
+                                    nameController.text,
+                                    typeController.text,
+                                    descriptionController.text,
+                                    nameController,
+                                    typeController,
+                                    descriptionController,
+                                  ));
                                 }else if(addButton == false){
-                                  await SQLHelper.updatePokemon(
-                                      context,
-                                      selectedMon,
-                                      name,
-                                      type,
-                                      description,
-                                      nameController,
-                                      typeController,
-                                      descriptionController);
-                                  pokemonId = 0;
-                                  setState(() {
-                                    _refreshPokemons();
-                                  });
+                                  BlocProvider.of<PokemonBloc>(context).add(UpdatePokemon(
+                                    context,
+                                    selectedMon,
+                                    nameController.text,
+                                    typeController.text,
+                                    descriptionController.text,
+                                    nameController,
+                                    typeController,
+                                    descriptionController,
+                                  ));
                                 }
                               }else{
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -264,41 +252,56 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
 
               const SizedBox(height: 10,),
-              _pokemons.isEmpty ? const Text("No Pokemons found..", style: TextStyle(fontSize: 22),):
+
               Expanded(
-                child: ListView.builder(
-                    itemCount: _pokemons.length,
-                    itemBuilder: (context, index) => PokemonCard(
-                        onTap: (){
-                          nameController.text = _pokemons[index]['name'];
-                          typeController.text = _pokemons[index]['type'];
-                          descriptionController.text = _pokemons[index]['description'];
-                          setState((){
-                            selectedIndex = index;
-                            showTextFields = true;
-                            showSearchFields = false;
-                            addButton = false;
-                            selectedMon = _pokemons[index]['name'].toString();
-                            if(closeButton == false) {
-                              toggleCloseButton();
-                            }
-                          });
-                        },
-                        onTap2: (){
-                          setState(() {
-                            selectedMon = _pokemons[index]['name'].toString();
-                            searchController.clear();
-                          });
-                          SQLHelper.deletePokemon(context,selectedMon);
-                          _refreshPokemons();
-                          selectedMon = "";
-                        },
-                        index: index,
-                        name: _pokemons[index]['name'],
-                        type: _pokemons[index]['type'],
-                        description: _pokemons[index]['description']
-                    )
-                ),
+                child: BlocBuilder<PokemonBloc, PokemonState>(
+                  builder: (context, state) {
+                    if(state is PokemonLoading){
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }else if(state is PokemonLoaded){
+                      return ListView.builder(
+                          itemCount: state.pokemons.length,
+                          itemBuilder: (context, index){
+                            final pokemon = state.pokemons[index];
+                            return PokemonCard(
+                                index: index,
+                                name: pokemon.name,
+                                type: pokemon.type,
+                                description: pokemon.description,
+                              onTap: (){
+                                selectedPokemon = state.pokemons[index];
+                                nameController.text = selectedPokemon!.name;
+                                typeController.text = selectedPokemon!.type;
+                                descriptionController.text = selectedPokemon!.description;
+                                selectedIndex = index;
+                                showTextFields = true;
+                                showSearchFields = false;
+                                addButton = false;
+                                selectedMon = selectedPokemon!.name;
+                                if(closeButton == false) {
+                                    toggleCloseButton();
+                                }
+                              },
+                              onTap2: (){
+                                selectedPokemon = state.pokemons[index];
+                                selectedMon = selectedPokemon!.name;
+                                BlocProvider.of<PokemonBloc>(context)
+                                    .add(DeletePokemon(context, selectedMon));
+                                _refreshPokemons();
+                              },
+                            );
+                          }
+                      );
+                    }else if (state is PokemonError){
+                      return Center(child: Text(state.message),);
+                    }else{
+                      return Container();
+                    }
+                  },
+
+                )
               ),
 
             ],

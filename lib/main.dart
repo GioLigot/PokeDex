@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:listview_test/bloc/pokemon_bloc.dart';
 import 'package:listview_test/pages/home_page.dart';
+
 
 
 void main() {
@@ -18,7 +21,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: const HomePage(),
+      home:
+      BlocProvider<PokemonBloc>(
+        create: (context) => PokemonBloc(),
+          child: const HomePage()),
     );
   }
 }
