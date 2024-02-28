@@ -17,14 +17,8 @@ class AddPokemon extends PokemonEvent {
   final TextEditingController typeController;
   final TextEditingController descriptionController;
 
-  AddPokemon(
-      this.context,
-      this.name,
-      this.type,
-      this.description,
-      this.nameController,
-      this.typeController,
-      this.descriptionController);
+  AddPokemon(this.context, this.name, this.type, this.description,
+      this.nameController, this.typeController, this.descriptionController);
 }
 
 class UpdatePokemon extends PokemonEvent {
@@ -52,11 +46,12 @@ class DeletePokemon extends PokemonEvent {
   final BuildContext context;
   final String selectedMon;
 
-  DeletePokemon(this.context,this.selectedMon);
+  DeletePokemon(this.context, this.selectedMon);
 }
 
 class SearchPokemon extends PokemonEvent {
-  final String name;
+  final BuildContext context;
+  final String search;
 
-  SearchPokemon(this.name);
+  SearchPokemon(this.context, this.search);
 }

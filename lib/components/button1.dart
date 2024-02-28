@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
 class MyButton1 extends StatelessWidget {
-
   final IconData iconData;
   final Function()? onTap;
 
-
   const MyButton1({
     super.key,
-
-
     required this.onTap,
     required this.iconData,
-
   });
 
   @override

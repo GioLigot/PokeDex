@@ -12,7 +12,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -24,7 +23,8 @@ class MyApp extends StatelessWidget {
       home:
       BlocProvider<PokemonBloc>(
         create: (context) => PokemonBloc(),
-          child: const HomePage()),
+          child: const HomePage()
+      ),
     );
   }
 }

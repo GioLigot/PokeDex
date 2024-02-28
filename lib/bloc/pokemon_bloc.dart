@@ -6,13 +6,14 @@ import './pokemon_event.dart';
 import './pokemon_state.dart';
 
 class PokemonBloc extends Bloc<PokemonEvent, PokemonState> {
-
   PokemonBloc() : super(PokemonLoading()) {
     on<FetchPokemons>((event, emit) async {
       emit(PokemonLoading());
       try {
-        List<Map<String, dynamic>> mapPokemons = await SQLHelper.getPokemons(event.context);
-        List<Pokemon> pokemons = List.generate(mapPokemons.length, (index) => Pokemon.fromMap(mapPokemons[index]));
+        List<Map<String, dynamic>> mapPokemons =
+            await SQLHelper.getPokemons(event.context);
+        List<Pokemon> pokemons = List.generate(
+            mapPokemons.length, (index) => Pokemon.fromMap(mapPokemons[index]));
         emit(PokemonLoaded(pokemons));
       } catch (error) {
         emit(PokemonError("Error fetching Pokemons"));
@@ -23,8 +24,13 @@ class PokemonBloc extends Bloc<PokemonEvent, PokemonState> {
       emit(PokemonLoading());
       try {
         await SQLHelper.addPokemon(
-            event.context,event.name, event.type, event.description, event.nameController, event.typeController, event.descriptionController
-        );
+            event.context,
+            event.name,
+            event.type,
+            event.description,
+            event.nameController,
+            event.typeController,
+            event.descriptionController);
         add(FetchPokemons(event.context));
       } catch (error) {
         emit(PokemonError("Error adding Pokemon"));
@@ -42,9 +48,8 @@ class PokemonBloc extends Bloc<PokemonEvent, PokemonState> {
             event.description,
             event.nameController,
             event.typeController,
-            event.descriptionController
-        );
-        add(FetchPokemons(event.context)); // Refresh after adding
+            event.descriptionController);
+        add(FetchPokemons(event.context));
       } catch (error) {
         emit(PokemonError("Error adding Pokemon"));
       }
@@ -53,13 +58,23 @@ class PokemonBloc extends Bloc<PokemonEvent, PokemonState> {
     on<DeletePokemon>((event, emit) async {
       emit(PokemonLoading());
       try {
-        await SQLHelper.deletePokemon(event.context, event.selectedMon); // Pass Pokemon ID
-        add(FetchPokemons(event.context)); // Refresh list after deleting
+        await SQLHelper.deletePokemon(event.context, event.selectedMon);
+        add(FetchPokemons(event.context));
       } catch (error) {
         emit(PokemonError("Error deleting Pokemon"));
       }
     });
 
-    // ... (Implement UpdatePokemon, DeletePokemon, and SearchPokemon events similarly)
+    on<SearchPokemon>((event, emit) async {
+      emit(PokemonLoading());
+      try {
+        List<Map<String, dynamic>> mapPokemons = await SQLHelper.getPokemon(event.context,event.search);
+        List<Pokemon> pokemons = List.generate(
+            mapPokemons.length, (index) => Pokemon.fromMap(mapPokemons[index]));
+        emit(PokemonLoaded(pokemons));
+      } catch (error) {
+        emit(PokemonError("Error fetching Pokemons"));
+      }
+    });
   }
 }
